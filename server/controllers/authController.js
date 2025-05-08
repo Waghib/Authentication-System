@@ -3,6 +3,7 @@ import jwt from "jsonwebtoken";
 import userModel from "../models/userModel.js";
 import transporter from "../config/nodemailer.js";
 
+// Register user
 export const register = async (req, res) => {
     const { name, email, password } = req.body;
 
@@ -72,6 +73,7 @@ export const register = async (req, res) => {
     }
 }
 
+// Login user
 export const login = async (req, res) => {
     const { email, password } = req.body;
 
@@ -117,6 +119,7 @@ export const login = async (req, res) => {
     }
 }
 
+// Logout user
 export const logout = async (req, res) => {
     try {
         res.clearCookie("token", {
@@ -129,6 +132,109 @@ export const logout = async (req, res) => {
             status: true,
             message: "Logout successful",
         });
+    } catch (error) {
+        return res.json({
+            status: false,
+            message: error.message,
+        });
+    }
+}
+
+// Send OTP for email verification
+export const sendVerifyOtp = async (req, res) => {
+    try {
+        const {userId} = req.body;
+
+        const user = await userModel.findById(userId);
+
+        if(user.isAccountVerified) {
+            return res.json({
+                status: false,
+                message: "Account already verified",
+            });
+        }
+
+        const otp = String(Math.floor(100000 + Math.random() * 900000))
+
+        user.verifyOtp = otp;
+        user.verifyOtpExpiryAt = Date.now() + 24 * 60 * 60 * 1000; // 1 day expiry
+        await user.save();
+
+        const mailOptions = {
+            from: process.env.SENDER_EMAIL,
+            to: user.email,
+            subject: "Account Verification OTP",
+            text: `Your OTP for account verification is ${otp}. It is valid for 24 hours.`,
+        };
+
+        await transporter.sendMail(mailOptions, (error, info) => {
+            if (error) {
+                console.log("Error sending email:", error);
+            } else {
+                console.log("Email sent:", info.response);
+            }
+        });
+
+        console.log("OTP sent successfully");
+        return res.json({
+            status: true,
+            message: "OTP sent successfully",
+        });
+
+    } catch (error) {
+        res.json({
+            status: false,
+            message: error.message,
+        });
+    }
+}
+
+// Verify OTP
+export const verifyEmail = async (req, res) => {
+    const { userId, otp } = req.body;
+
+    if (!userId || !otp) {
+        return res.json({
+            status: false,
+            message: "Please fill all the fields",
+        });
+    }
+
+    try {
+        const user = await userModel.findById(userId);
+
+        if (!user) {
+            return res.json({
+                status: false,
+                message: "User not found",
+            });
+        }
+
+        if(user.verifyOtp === '' || user.verifyOtp !== otp) {
+            return res.json({
+                status: false,
+                message: "Invalid OTP",
+            });
+        }
+
+        if(user.verifyOtpExpiryAt < Date.now()) {
+            return res.json({
+                status: false,
+                message: "OTP expired",
+            });
+        }
+
+        user.isAccountVerified = true;
+        user.verifyOtp = '';
+        user.verifyOtpExpiryAt = 0;
+
+        await user.save();
+        console.log("Account verified successfully");
+        return res.json({
+            status: true,
+            message: "Account verified successfully",
+        });
+
     } catch (error) {
         return res.json({
             status: false,

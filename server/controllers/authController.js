@@ -75,6 +75,13 @@ export const register = async (req, res) => {
 
 // Login user
 export const login = async (req, res) => {
+
+    if(!req.body) {
+        return res.json({
+            status: false,
+            message: "Please fill all the fields",
+        });
+    }
     const { email, password } = req.body;
 
     if (!email || !password) {
@@ -99,6 +106,14 @@ export const login = async (req, res) => {
             expiresIn: "7d",
         });
 
+        // Log cookie options for debugging
+        console.log("Setting token cookie with options:", {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
+            maxAge: 7 * 24 * 60 * 60 * 1000
+        });
+        
         res.cookie("token", token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === "production",
@@ -143,8 +158,10 @@ export const logout = async (req, res) => {
 // Send OTP for email verification
 export const sendVerifyOtp = async (req, res) => {
     try {
+        console.log("Full request body in sendVerifyOtp:", req.body);
         const {userId} = req.body;
-
+        console.log("User ID received from middleware:", userId);
+        
         const user = await userModel.findById(userId);
 
         if(user.isAccountVerified) {
@@ -155,6 +172,7 @@ export const sendVerifyOtp = async (req, res) => {
         }
 
         const otp = String(Math.floor(100000 + Math.random() * 900000))
+        console.log("OTP generated:", otp);
 
         user.verifyOtp = otp;
         user.verifyOtpExpiryAt = Date.now() + 24 * 60 * 60 * 1000; // 1 day expiry

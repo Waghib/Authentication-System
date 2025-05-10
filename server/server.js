@@ -16,7 +16,12 @@ mongoose.connection.on('error', (err) => {
 // Middleware
 app.use(express.json());
 app.use(cookieParser());
-app.use(cors({credentials: true}));
+app.use(cors({
+  origin: 'http://localhost:5000',  // Add your frontend URL here if different
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 
 // API Endpoints
 app.get('/', (req, res) => {

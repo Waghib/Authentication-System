@@ -13,12 +13,14 @@ const userAuth = (req, res, next) => {
     }
     try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        console.log("Token decoded:", decoded);
         if (decoded.id){
             // Initialize req.body if it doesn't exist
             if (!req.body) {
                 req.body = {};
             }
             req.body.userId = decoded.id;
+            console.log("User ID set in request body:", req.body.userId);
         }else{
             return res.status(401).json({
                 status: false,

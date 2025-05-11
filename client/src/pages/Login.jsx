@@ -1,16 +1,69 @@
 import React from "react";
-import { useState } from "react";
+import { useState, useContext } from "react";
 import { assets } from "../assets/assets.js";
 import { useNavigate } from "react-router-dom";
+import { AppContext } from "../context/AppContext.jsx";
+import axios from "axios";
+import { toast } from "react-toastify";
 
 const Login = () => {
 
   const navigate = useNavigate();
 
+  const { backendUrl, setIsLoggedin, setUserData, getUserData } = useContext(AppContext);
+
   const [state, setState] = useState("Sign Up");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  
+  const onSubmitHandler = async (e) => {
+    console.log(backendUrl);
+    try {
+      e.preventDefault();
+
+      axios.defaults.withCredentials = true;
+
+      if (state === "Sign Up") {
+        const response = await axios.post(backendUrl + '/api/auth/register', {
+          name,
+          email,
+          password,
+        });
+
+        if (response.data.status) {
+          // setUserData(response.data.user);
+          setIsLoggedin(true);
+          getUserData();
+          navigate("/");
+        } else {
+          toast.error(response.data.message);
+        }
+
+      } else {
+        console.log("login");
+        const response = await axios.post(backendUrl + '/api/auth/login', {
+          email,
+          password,
+        });
+
+        if (response.data.status) {
+          console.log("login success", response.data);
+          // setUserData(response.data.user);
+          setIsLoggedin(true);
+          getUserData();
+          navigate("/");
+        } else {
+          console.log("login error", response.data.message);
+          toast.error(response.data.message);
+        }
+      }
+      
+    } catch (error) {
+      console.error("Request error:", error);
+      toast.error(error.response?.data?.message || "An error occurred");
+    }
+  }
 
   return (
     <div className="flex items-center justify-center min-h-screen px-6 sm:px-0 bg-gradient-to-br from-blue-200 to-purple-400">
@@ -30,7 +83,7 @@ const Login = () => {
             : "Login to your account!"}
         </p>
 
-        <form>
+        <form onSubmit={onSubmitHandler}>
           {state === "Sign Up" && (
             <div className="mb-4 flex items-center gap-3 w-full px-5 py-2.5 rounded-full bg-[#333A5C]">
               <img src={assets.person_icon} alt="" />

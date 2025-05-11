@@ -14,15 +14,12 @@ mongoose.connection.on('error', (err) => {
     console.log(`Database connection error: ${err}`);
 });
 
+const allowedOrigins = ['http://localhost:5173'];
+
 // Middleware
 app.use(express.json());
 app.use(cookieParser());
-app.use(cors({
-  origin: 'http://localhost:5000',  // Add your frontend URL here if different
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
+app.use(cors({origin: allowedOrigins, credentials: true}));
 
 // API Endpoints
 app.get('/', (req, res) => {

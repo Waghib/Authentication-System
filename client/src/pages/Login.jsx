@@ -1,21 +1,30 @@
 import React from "react";
-import { useState, useContext } from "react";
+import { useState, useContext, useEffect } from "react";
 import { assets } from "../assets/assets.js";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { AppContext } from "../context/AppContext.jsx";
 import axios from "axios";
 import { toast } from "react-toastify";
+import GoogleAuthButton from "../components/GoogleAuthButton.jsx";
 
 const Login = () => {
-
   const navigate = useNavigate();
-
+  const location = useLocation();
   const { backendUrl, setIsLoggedin, setUserData, getUserData } = useContext(AppContext);
 
   const [state, setState] = useState("Sign Up");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  
+  // Check for authentication error in URL
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const error = params.get('error');
+    if (error === 'authentication_failed') {
+      toast.error('Google authentication failed. Please try again.');
+    }
+  }, [location]);
   
   const onSubmitHandler = async (e) => {
     console.log(backendUrl);
@@ -133,6 +142,14 @@ const Login = () => {
             {state}
           </button>
         </form>
+
+        <div className="flex items-center my-4">
+          <div className="flex-grow h-px bg-gray-600"></div>
+          <span className="px-3 text-gray-400 text-xs">OR</span>
+          <div className="flex-grow h-px bg-gray-600"></div>
+        </div>
+
+        <GoogleAuthButton />
 
         {state === "Sign Up" ? (
           <p className="text-gray-400 text-center text-xs mt-4">

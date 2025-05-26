@@ -405,3 +405,33 @@ export const resetPassword = async (req, res) => {
         });
     }
 }
+
+// Google OAuth callback
+export const googleCallback = (req, res) => {
+    try {
+        // User is already authenticated by Passport
+        const user = req.user;
+        
+        // Generate JWT token
+        const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+            expiresIn: "7d",
+        });
+        
+        // Set token in cookie
+        res.cookie("token", token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
+            maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+        });
+        
+        // Redirect to home page
+        res.redirect(process.env.NODE_ENV === "production" 
+            ? process.env.CLIENT_URL 
+            : "http://localhost:5173");
+            
+    } catch (error) {
+        console.error("Google auth error:", error);
+        res.redirect("/login?error=authentication_failed");
+    }
+};
